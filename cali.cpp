@@ -61,8 +61,12 @@ int main ( int argc , char** argv)
         Map m(1080,680);
         m.set_background(Color(220, 226, 240));
 
-        // create styles
+		// Load Mountain-style from XML
+		bool strict = true;
+		mapnik::load_map(m, "style.xml", strict);
 
+        // create styles
+/*
         // States (polygon)
         feature_type_style cali_style;
 
@@ -83,33 +87,9 @@ int main ( int argc , char** argv)
         provlines_rule.append(line_symbolizer(provlines_stk));
         provlines_rule.set_filter(create_filter("[STATE] <> 'California'"));
         cali_style.add_rule(provlines_rule);
+*/
+        // m.insert_style("cali",cali_style);
 
-        m.insert_style("cali",cali_style);
-
-		// Load Mountain-style from XML
-		bool strict = true;
-		mapnik::load_map(m, "style.xml", strict);
-
-		// Mountain data points
-        {
-			point_datasource* pds = new point_datasource;
-			pds->add_point(-119, 39, "name", "mount mapnik");
-			pds->add_point(-121, 38, "name", "mount fooboo");
-			//pds->add_point(-122, 38, "name", "mount booboo");
-			//pds->add_point(-123, 37, "name", "mount hobo");
-			//pds->add_point(-118, 34, "name", "mount beegee");
-			datasource_ptr ppoints_data(pds);
-
-			// Plot datapoints
-			Layer lyr("Mountains");
-			lyr.set_srs("+proj=latlong +datum=WGS84");
-			lyr.add_style("mountains");
-			lyr.set_datasource(ppoints_data);
-			m.addLayer(lyr);
-
-			std::cerr << "Mountain range=" << lyr.envelope() << std::endl;
-        }
-/*
         // Layers
         // Provincial  polygons
         {
@@ -123,8 +103,28 @@ int main ( int argc , char** argv)
             m.addLayer(lyr);
         }
 
+		// Mountain data points
+        {
+			point_datasource* pds = new point_datasource;
+			//pds->add_point(-119, 39, "name", "mount mapnik");
+			//pds->add_point(-121, 38, "name", "mount fooboo");
+			//pds->add_point(-122, 38, "name", "mount booboo");
+			//pds->add_point(-123, 37, "name", "mount hobo");
+			pds->add_point(-118, 34, "name", "mount beegee");
+			datasource_ptr ppoints_data(pds);
+
+			// Plot datapoints
+			Layer lyr("Mountains");
+			lyr.set_srs("+proj=latlong +datum=WGS84");
+			lyr.add_style("mountains");
+			lyr.set_datasource(ppoints_data);
+			m.addLayer(lyr);
+
+			std::cerr << "Mountain range=" << lyr.envelope() << std::endl;
+        }
+
         // Get layer's featureset
-        Layer lay = m.getLayer(1);
+        Layer lay = m.getLayer(0);
         mapnik::datasource_ptr ds = lay.datasource();
         mapnik::query q(lay.envelope(), 1.0); // what does this second param 'res' do?
         q.add_property_name("STATE"); // NOTE: Without this call, no properties will be found!
@@ -150,8 +150,8 @@ int main ( int argc , char** argv)
             }
             feat = fs->next();
 		}
-*/
-		Envelope<double> extent = m.getLayer(0).envelope();
+
+		// Envelope<double> extent = m.getLayer(0).envelope();
 
         m.zoomToBox(extent);
         m.zoom(1.2); // zoom out slightly

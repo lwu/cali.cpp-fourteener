@@ -2,10 +2,29 @@
 <!DOCTYPE Map>
 <!-- Sample Mapnik XML -->
 <Map>
+  <Style name="cali">
+    <Rule>
+    </Rule>
+    <Rule>
+      <Filter>[STATE] &lt;&gt; 'California'</Filter>
+      <LineSymbolizer>
+	<CssParameter name="stroke">cornsilk</CssParameter>
+	<CssParameter name="stroke-width">0.1</CssParameter>
+      </LineSymbolizer>
+    </Rule>
+
+    <Rule>
+      <PolygonSymbolizer>
+	<Filter>[STATE] = 'California'</Filter>
+	<CssParameter name="fill">#cfdea7</CssParameter>
+      </PolygonSymbolizer>
+    </Rule>
+  </Style>
   <Style name="mountains">
     <Rule>
       <MaxScaleDenominator>50000</MaxScaleDenominator> <!-- ? -->
-      <PointSymbolizer file="../viewer/images/globe.png" type="png" width="64" height="64" />
+      <MinScaleDenominator>25000</MinScaleDenominator>
+      <PointSymbolizer file="parking.png" type="png" width="128" height="128" />
     </Rule>
   </Style>
 </Map>
