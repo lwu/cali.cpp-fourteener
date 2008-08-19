@@ -1,6 +1,8 @@
+/* -*- tab-width: 4 -*- */
 /*****************************************************************************
- * Example code modified from Mapnik rundemo.cpp (r727, license LGPL).
- * Renders the State of California using USGS state boundaries data.
+ * Example code modified from Mapnik rundemo.cpp (r727, license LGPL). It
+ * (1) Renders the State of California using USGS state boundaries data.
+ * (2) Plots a set of California fourteeners as point symbols
  *****************************************************************************/
 
 // define before any includes
@@ -14,20 +16,31 @@
 #include <mapnik/color_factory.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/config_error.hpp>
+#include <mapnik/feature_factory.hpp>
+#include <mapnik/memory_datasource.hpp>
+#include <mapnik/load_map.hpp>
 #include <iostream>
 
-class point_datasource : public memory_datasource {
+// This class implements a simple way of displaying point-based data
+//
+class point_datasource : public mapnik::memory_datasource {
 public:
 	point_datasource() : feat_id(0) {}
-	void add_point(double x,y double y, string value);
+	void add_point(double x, double y, const char* key, const char* value);
 private:
 	int feat_id;
 };
 
-void point_datasource::add_point(double x, double y, string value)
+void point_datasource::add_point(double x, double y, 
+				 const char* key, const char* value)
 {
+	using namespace mapnik;
 	feature_ptr feature(feature_factory::create(feat_id++));
-	feature->set_geometry();
+	geometry2d * pt = new point_impl;
+	pt->move_to(x,y);
+	feature->add_geometry(pt);
+	transcoder tr("utf-8");
+	(*feature)[key] = tr.transcode(value);
 	this->push(feature);
 }
 
@@ -56,7 +69,7 @@ int main ( int argc , char** argv)
         rule_type cali_rule;
         filter_ptr cali_filter = create_filter("[STATE] = 'California'");
         cali_rule.set_filter(cali_filter);
-        cali_rule.append(polygon_symbolizer(Color(207, 222, 167)));
+        // cali_rule.append(polygon_symbolizer(Color(207, 222, 167)));
         cali_style.add_rule(cali_rule);
 
         // Provinces (polyline)
@@ -66,13 +79,37 @@ int main ( int argc , char** argv)
         provlines_stk.add_dash(10, 6);
 
         rule_type provlines_rule;
-        provlines_rule.append(polygon_symbolizer(color_factory::from_string("cornsilk")));
+        // provlines_rule.append(polygon_symbolizer(color_factory::from_string("cornsilk")));
         provlines_rule.append(line_symbolizer(provlines_stk));
         provlines_rule.set_filter(create_filter("[STATE] <> 'California'"));
         cali_style.add_rule(provlines_rule);
 
         m.insert_style("cali",cali_style);
 
+		// Load Mountain-style from XML
+		bool strict = true;
+		mapnik::load_map(m, "style.xml", strict);
+
+		// Mountain data points
+        {
+			point_datasource* pds = new point_datasource;
+			pds->add_point(-119, 39, "name", "mount mapnik");
+			pds->add_point(-121, 38, "name", "mount fooboo");
+			//pds->add_point(-122, 38, "name", "mount booboo");
+			//pds->add_point(-123, 37, "name", "mount hobo");
+			//pds->add_point(-118, 34, "name", "mount beegee");
+			datasource_ptr ppoints_data(pds);
+
+			// Plot datapoints
+			Layer lyr("Mountains");
+			lyr.set_srs("+proj=latlong +datum=WGS84");
+			lyr.add_style("mountains");
+			lyr.set_datasource(ppoints_data);
+			m.addLayer(lyr);
+
+			std::cerr << "Mountain range=" << lyr.envelope() << std::endl;
+        }
+/*
         // Layers
         // Provincial  polygons
         {
@@ -86,19 +123,10 @@ int main ( int argc , char** argv)
             m.addLayer(lyr);
         }
 
-        {
-			parameters p;
-			p["type"]="shape";
-			p["file"]="..";
-        }
-
-	// Plot datapoints
-	point_datasource pds;
-
         // Get layer's featureset
-        Layer lay = m.getLayer(0);
+        Layer lay = m.getLayer(1);
         mapnik::datasource_ptr ds = lay.datasource();
-        mapnik::query q(lay.envelope(), 1.0 /* what does this "res" param do? */);
+        mapnik::query q(lay.envelope(), 1.0); // what does this second param 'res' do?
         q.add_property_name("STATE"); // NOTE: Without this call, no properties will be found!
         mapnik::featureset_ptr fs = ds->features(q);
         // One day, use filter_featureset<> instead?
@@ -114,14 +142,16 @@ int main ( int argc , char** argv)
                 for  (unsigned i=0; i<feat->num_geometries();++i) {
                     geometry2d & geom = feat->get_geometry(i);
                     if (extent.width() < 0 && extent.height() < 0) {
-                    // NOTE: expand_to_include() broken w/ nil extent. Work around.
+						// NOTE: expand_to_include() broken w/ nil extent. Work around.
                         extent = geom.envelope();
                     }
                     extent.expand_to_include(geom.envelope());
                 }
             }
             feat = fs->next();
-        }
+		}
+*/
+		Envelope<double> extent = m.getLayer(0).envelope();
 
         m.zoomToBox(extent);
         m.zoom(1.2); // zoom out slightly
