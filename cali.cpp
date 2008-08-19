@@ -27,6 +27,8 @@ class point_datasource : public mapnik::memory_datasource {
 public:
 	point_datasource() : feat_id(0) {}
 	void add_point(double x, double y, const char* key, const char* value);
+    int type() const { return mapnik::datasource::Raster; }
+
 private:
 	int feat_id;
 };
@@ -66,29 +68,23 @@ int main ( int argc , char** argv)
 		mapnik::load_map(m, "style.xml", strict);
 
         // create styles
-/*
+
         // States (polygon)
-        feature_type_style cali_style;
+        feature_type_style other_style;
 
-        rule_type cali_rule;
-        filter_ptr cali_filter = create_filter("[STATE] = 'California'");
-        cali_rule.set_filter(cali_filter);
-        // cali_rule.append(polygon_symbolizer(Color(207, 222, 167)));
-        cali_style.add_rule(cali_rule);
-
-        // Provinces (polyline)
+        // non-CA states (polyline)
         feature_type_style provlines_style;
 
         stroke provlines_stk (Color(127,127,127),0.75);
         provlines_stk.add_dash(10, 6);
 
         rule_type provlines_rule;
-        // provlines_rule.append(polygon_symbolizer(color_factory::from_string("cornsilk")));
+        provlines_rule.append(polygon_symbolizer(color_factory::from_string("cornsilk")));
         provlines_rule.append(line_symbolizer(provlines_stk));
         provlines_rule.set_filter(create_filter("[STATE] <> 'California'"));
-        cali_style.add_rule(provlines_rule);
-*/
-        // m.insert_style("cali",cali_style);
+        other_style.add_rule(provlines_rule);
+
+        m.insert_style("elsewhere", other_style);
 
         // Layers
         // Provincial  polygons
@@ -99,28 +95,27 @@ int main ( int argc , char** argv)
 
             Layer lyr("Cali");
             lyr.set_datasource(datasource_cache::instance()->create(p));
-            lyr.add_style("cali");
+            lyr.add_style("cali"); // style.xml
+            lyr.add_style("elsewhere"); // this file
             m.addLayer(lyr);
         }
 
 		// Mountain data points
         {
 			point_datasource* pds = new point_datasource;
-			//pds->add_point(-119, 39, "name", "mount mapnik");
-			//pds->add_point(-121, 38, "name", "mount fooboo");
-			//pds->add_point(-122, 38, "name", "mount booboo");
-			//pds->add_point(-123, 37, "name", "mount hobo");
-			pds->add_point(-118, 34, "name", "mount beegee");
+			pds->add_point(-118.29, 36.58, "name", "mount Whitney");
+			pds->add_point(-118.31, 36.65, "name", "mount Williamson");
+			pds->add_point(-118.25, 37.63, "name", "White mountain");
+			pds->add_point(-122.19, 41.41, "name", "mount Shasta");
+			pds->add_point(-118.24, 37.52, "name", "mount Langley");
+			// ...
 			datasource_ptr ppoints_data(pds);
 
 			// Plot datapoints
 			Layer lyr("Mountains");
-			lyr.set_srs("+proj=latlong +datum=WGS84");
-			lyr.add_style("mountains");
 			lyr.set_datasource(ppoints_data);
+			lyr.add_style("mtn");
 			m.addLayer(lyr);
-
-			std::cerr << "Mountain range=" << lyr.envelope() << std::endl;
         }
 
         // Get layer's featureset
@@ -151,10 +146,8 @@ int main ( int argc , char** argv)
             feat = fs->next();
 		}
 
-		// Envelope<double> extent = m.getLayer(0).envelope();
-
         m.zoomToBox(extent);
-        m.zoom(1.2); // zoom out slightly
+        m.zoom(1.15); // zoom out slightly
 
         Image32 buf(m.getWidth(),m.getHeight());
         agg_renderer<Image32> ren(m,buf);
