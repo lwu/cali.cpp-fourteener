@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map>
+<!-- Sample Mapnik XML -->
+<Map>
+  <Style name="mountains">
+    <Rule>
+      <MaxScaleDenominator>50000</MaxScaleDenominator> <!-- ? -->
+      <PointSymbolizer file="../viewer/images/globe.png" type="png" width="64" height="64" />
+    </Rule>
+  </Style>
+</Map>
